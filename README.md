@@ -73,3 +73,28 @@ java -jar LocalApp.jar <inputFileName1> ... <inputFileNameN> <outputFileName1> .
 3. **Shuts down all worker instances** and **cleans up SQS queues** (`MANAGER_TO_WORKER` & `WORKER_TO_MANAGER`).
 4. **Self-terminates** after ensuring all tasks are completed.
 
+![image](https://github.com/user-attachments/assets/f1c1ec93-5b69-4805-8ca8-ee11ba41c949)
+
+1. Local Application uploads the file with the list of PDF files and operations to S3.
+2. Local Application sends a message (queue) stating the location of the input file on S3.
+3. Local Application does one of the two:
+4. Starts the manager.
+5. Checks if a manager is active and if not, starts it.
+4. Manager downloads list of PDF files together with the operations.
+5. Manager creates an SQS message for each URL and operation from the input list.
+6. Manager bootstraps nodes to process messages.
+7. Worker gets a message from an SQS queue.
+8. Worker downloads the PDF file indicated in the message.
+9. Worker performs the requested operation on the PDF file, and uploads the resulting output
+to S3.
+10. Worker puts a message in an SQS queue indicating the original URL of the PDF file and the S3
+URL of the output file, together with the operation that produced it.
+11. Manager reads all Workers' messages from SQS and creates one summary file, once all URLs
+in the input file have been processed.
+12. Manager uploads the summary file to S3.
+13. Manager posts an SQS message about the summary file.
+14. Local Application reads SQS message.
+15. Local Application downloads the summary file from S3.
+16. Local Application creates html output file.
+17. Local application send a terminate message to the manager if it received terminate as one of
+its arguments
